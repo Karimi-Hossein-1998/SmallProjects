@@ -14,7 +14,8 @@
 #include <random>
 #include <utility>
 #include <algorithm>
-#include "../ankerl/unordered_dense.h"
+#include "../../ankerl/unordered_dense.h"
+#include "circle.hpp"
 // #include <print>
 
 namespace RNG{
@@ -46,84 +47,6 @@ static constexpr std::array<std::pair<double,double>,8> DirectionStraightDiagona
 	{{1.0,0.0},{1.0,1.0},{0.0,1.0},{-1.0,1.0},{-1.0,0.0},{-1.0,-1.0},{0.0,-1.0},{1.0,-1.0}}
 };
 
-class Canvas
-{
-	private:
-		uint64_t Width;
-		uint64_t Height;
-		std::string Title;
-
-		SDL_Window* Window;
-		SDL_Renderer* Renderer;
-	public:
-		// Constructors
-		Canvas() = default;
-		Canvas(const Canvas&) = delete;
-		Canvas(Canvas&& other) noexcept : Width(other.Width), Height(other.Height), Title(std::move(other.Title)), Window(std::exchange(other.Window, nullptr)), Renderer(std::exchange(other.Renderer,nullptr)) {}
-		explicit Canvas(uint64_t w=900, uint64_t h=600, std::string t="SDL App") : Width(w), Height(h), Title(std::move(t)) {}
-		// Assignments
-		Canvas& operator=(const Canvas&) = delete;
-		Canvas& operator=(Canvas&& other) noexcept
-		{
-			if((*this)==other)
-			{
-				return *this;
-			}
-			else
-			{
-				Destroy();
-				Width=other.Width;
-				Height=other.Height;
-				Title=std::move(other.Title);
-				Window=std::exchange(other.Window,nullptr);
-				Renderer=std::exchange(other.Renderer,nullptr);
-				return *this;
-			}
-		}
-		// Destructor
-		~Canvas() {Destroy();}
-		// Comparison
-		bool operator==(const Canvas& other) const noexcept
-		{
-			return (Width==other.Width && Height==other.Height && Title==other.Title && Window==other.Window && Renderer==other.Renderer)?true:false;
-		}
-		// Destroy()
-		void Destroy() noexcept
-		{
-			if (Renderer)
-			{
-				SDL_DestroyRenderer(Renderer);
-				Renderer = nullptr;
-			}
-			if (Window)
-			{
-				SDL_DestroyWindow(Window);
-				Window = nullptr;
-			}
-			SDL_Quit();
-		}
-		// Create Window
-		bool CanvasCreateWindow()
-		{
-			if (!SDL_Init(SDL_INIT_VIDEO))
-			{
-				std::printf("SDL Init Error: [SDL] %s\n",SDL_GetError());
-				return false;
-			}
-			if (!SDL_CreateWindowAndRenderer(Title.c_str(), static_cast<int>(Width), static_cast<int>(Height), SDL_WINDOW_RESIZABLE, &Window, &Renderer))
-			{
-				std::printf("Window Creation Error: [SDL] %s\n",SDL_GetError());
-				SDL_Quit();
-				return false;
-			}
-			return true;
-		}
-
-		// Getters
-		[[nodiscard]] SDL_Renderer* GetRenderer() const noexcept {return Renderer;}
-		[[nodiscard]] SDL_Window* GetWindow() const noexcept {return Window;}
-};
-
 enum class WalkerMoveStyle
 {
 	Straight=0,
@@ -137,35 +60,11 @@ enum class WalkerMoveStyle
 	StraightDiagonalContinuous
 };
 
-class Color
-{
-	private:
-		unsigned short R;
-		unsigned short G;
-		unsigned short B;
-		unsigned short A;
-	public:
-		// Constructor
-		Color() = default;
-		Color(const Color&) = default;
-		Color(Color&&) noexcept = default;
-		explicit Color(short r, short g, short b, short a) : R(r), G(g), B(b), A(a) {}
-		// Assignment
-		Color& operator=(const Color&) = default;
-		Color& operator=(Color&&) noexcept = default;
-		// Destructor
-		~Color() = default;
-		const unsigned short GetR() const noexcept {return R;}
-		const unsigned short GetG() const noexcept {return G;}
-		const unsigned short GetB() const noexcept {return B;}
-		const unsigned short GetA() const noexcept {return A;}
-		
-};
-
 class Walker
 {
 	private:
-		Color WalkerColor;
+		Color  WalkerColor;
+		ColorF WalkerColorF;
 		double X;
 		double Y;
 		double Size;
@@ -175,7 +74,7 @@ class Walker
 		Walker() = default;
 		Walker(const Walker&) = default;
 		Walker(Walker&&) noexcept = default;
-		explicit Walker(Color c=Color(0,255,0,255), double x=0.0, double y = 0.0, double s = 0.0, WalkerMoveStyle wms=WalkerMoveStyle::Straight) : WalkerColor(c), X(x), Y(y), Size(s), MoveStyle(wms) {} 
+		explicit Walker(Color c=Color(0,255,0,255), double x=0.0, double y = 0.0, double s = 0.0, WalkerMoveStyle wms=WalkerMoveStyle::Straight) : WalkerColor(c), X(x), Y(y), Size(s), MoveStyle(wms) {WalkerColorF=WalkerColor;} 
 		// Assignment
 		Walker& operator=(const Walker&) = default;
 		Walker& operator=(Walker&&) noexcept = default;
@@ -257,8 +156,12 @@ class Walker
 			}
 			else
 			{
-				SDL_FRect rect{x-size/2.0f,y-size/2.0f,size,size};
-				SDL_RenderFillRect(renderer,&rect);
+				// SDL_FRect rect{x-size/2.0f,y-size/2.0f,size,size};
+				// SDL_RenderFillRect(renderer,&rect);
+				// RenderFilledCircle(renderer,x,y,size*0.5,100,WalkerColorF);
+				// RenderCircle(renderer,x,y,size*0.5,WalkerColorF,std::max(size*0.01,2.0),5*static_cast<int>(size));
+				RenderEllipse(renderer,x,y,size,size*0.5,-std::numbers::pi_v<float>*0.125,WalkerColorF,std::max(size*0.01,2.0),5*static_cast<int>(size));
+				// RenderCircleMidpoint(renderer,x,y,size*0.5);
 			}
 		}
 		const double GetX() const noexcept {return X;}
@@ -320,7 +223,7 @@ class TrailManager
 			};
 		}
 
-		void Draw(SDL_Renderer* renderer)
+		void Draw(SDL_Renderer* renderer, ColorF WalkerColorF=ColorF{1.0f,0.0f,0.0f,1.0f})
 		{
 			SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
 			for (const auto& [key,cell] : trailMap)
@@ -330,9 +233,14 @@ class TrailManager
 				float fade = 1.0f - static_cast<float>(cell.walkerAge)/static_cast<float>(maxAge);
 				Uint8 alpha = static_cast<Uint8>(std::clamp(fade*255.0f,0.0f,255.0f));
 				SDL_SetRenderDrawColor(renderer, cell.R, cell.G, cell.B, alpha);
-				float size = static_cast<float>(cell.Size)*fade;
+				float size = static_cast<float>(cell.Size);
 				if (cell.Size<=1.0) SDL_RenderPoint(renderer,x,y);
-				else {SDL_FRect rect{x-size/2.0f,y-size/2.0f,size,size}; SDL_RenderFillRect(renderer,&rect);}
+				else
+				{
+					// SDL_FRect
+					// rect{x-size/2.0f,y-size/2.0f,size,size}; SDL_RenderFillRect(renderer,&rect);
+					RenderFilledCircle(renderer,x,y,size*0.5,100,WalkerColorF);
+				}
 			}
 		}
 };
