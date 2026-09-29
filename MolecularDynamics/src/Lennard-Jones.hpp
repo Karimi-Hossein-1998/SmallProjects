@@ -160,11 +160,11 @@ class LennardJones
 
 					if (distSqr>distCutOffSqr) continue;
 
-					const double distSqrInv  = 1.0 / (distSqr+ epsSqr);
-					const double ljSigmaSqrOdSI = ljSigmaSqr*distSqrInv;
-					const double ljSigmaSqrOdSIThree = ljSigmaSqrOdSI*ljSigmaSqrOdSI*ljSigmaSqrOdSI;
-					const double ljSigmaSqrOdSISix = ljSigmaSqrOdSIThree*ljSigmaSqrOdSIThree;
-					const double potential = ljFactor*distSqrInv*(ljSigmaSqrOdSIThree-2*ljSigmaSqrOdSISix);
+					const double distSqrInv  = 1.0 / (distSqr+ epsSqr);                                     // distance squared inverse
+					const double ljSigmaSqrOdSI = ljSigmaSqr*distSqrInv;                                    // \sigma*distSqrInv
+					const double ljSigmaSqrOdSIThree = ljSigmaSqrOdSI*ljSigmaSqrOdSI*ljSigmaSqrOdSI;        // (\sigma*distSqrInv)^3
+					const double ljSigmaSqrOdSISix = ljSigmaSqrOdSIThree*ljSigmaSqrOdSIThree;               // (\sigma*distSqrInv)^6
+					const double potential = ljFactor*distSqrInv*(ljSigmaSqrOdSIThree-2*ljSigmaSqrOdSISix); // Lennard-Jones potential for j,i interaction
 
 					ax += deltaPosX * potential;
 					ay += deltaPosY * potential;
