@@ -10,6 +10,11 @@ add_executable(walker walker.cpp)
 target_include_directories(walker PRIVATE src)
 target_link_libraries(walker PRIVATE PkgConfig::SDL3)
 
+add_executable(walker3d walker3d.cpp)
+target_include_directories(walker3d PRIVATE src)
+target_link_libraries(walker3d PRIVATE PkgConfig::SDL3)
+
 if(NOT MSVC)
     target_compile_options(walker PRIVATE -O3 -funroll-loops -ftree-vectorize)
+    target_compile_options(walker3d PRIVATE -O3 -funroll-loops -ftree-vectorize)
 endif()
