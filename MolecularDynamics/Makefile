@@ -15,16 +15,21 @@ CXXFLAGS := -std=$(CXXSTD) $(OPT) $(WARN) $(OMP) $(SDL_CFLAGS)
 
 .PHONY: all clean validate
 
-all: lennard-jones validate
+all: lennard-jones lennard-jones3d validate
 
 lennard-jones: lennard-jones.cpp src/molecular-dynamics.hpp src/renderer.hpp \
                src/potential.hpp src/initial-conditions.hpp src/engine.hpp \
                src/thermostats.hpp src/analysis.hpp src/circle.hpp src/canvas.hpp
 	$(CXX) $(CXXFLAGS) lennard-jones.cpp -o $@ $(SDL_LIBS)
 
+lennard-jones3d: lennard-jones3d.cpp src/molecular-dynamics3d.hpp src/renderer3d.hpp \
+                 src/potential3d.hpp src/initial-conditions3d.hpp src/engine3d.hpp \
+                 src/thermostats3d.hpp src/analysis3d.hpp src/circle.hpp src/canvas.hpp
+	$(CXX) $(CXXFLAGS) lennard-jones3d.cpp -o $@ $(SDL_LIBS)
+
 validate: validate.cpp src/molecular-dynamics.hpp src/potential.hpp \
           src/initial-conditions.hpp src/engine.hpp src/thermostats.hpp src/analysis.hpp
 	$(CXX) $(CXXFLAGS) validate.cpp -o $@
 
 clean:
-	rm -f lennard-jones validate md-observables.csv
+	rm -f lennard-jones lennard-jones3d validate md-observables.csv md3d-observables.csv
